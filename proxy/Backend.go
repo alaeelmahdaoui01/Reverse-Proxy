@@ -5,7 +5,7 @@
 // It prevents multiple goroutines from accessing shared data at the same time in unsafe ways
 // ensuring thread safe operations on the server pool 
 
-package reverse_proxy
+package proxy
 
 import (
 	"net/url"
@@ -21,7 +21,23 @@ type Backend struct {
 }
 
 
-func (backend *Backend) setAlive(alive bool) {
+// constructor for backends
+func NewBackend(rawURL string) (*Backend, error) {
+	// to make it url.URL
+	parsedURL, err := url.Parse(rawURL) 
+	if err != nil {
+		return nil, err
+	}
+
+	return &Backend{
+		URL:          parsedURL,
+		Alive:        true,
+		CurrentConns: 0,
+	}, nil
+}
+
+
+func (backend *Backend) SetAlive(alive bool) {
 	// Lock instead of Unlock bcs here we're writing and the lock should be exclusive, accessed by only one goroutine 
 	backend.mux.Lock()
 	defer backend.mux.Unlock()
@@ -30,7 +46,7 @@ func (backend *Backend) setAlive(alive bool) {
 }
 
 
-func (backend *Backend) isAlive() bool{
+func (backend *Backend) IsAlive() bool{
 	// locking the current state of backend (to avoid collision with the health checker goroutine access at the same time)
 	// Rlock for the lock on reading only 
 	backend.mux.RLock()
@@ -45,15 +61,15 @@ func (backend *Backend) isAlive() bool{
 // bcs the code would be executing for every request, it would be too expensive for a high load
 // atomic allows to do the operation as well, doesnt need mutex 
 
-func (backend *Backend) increaseConn() {
+func (backend *Backend) IncreaseConn() {
 	atomic.AddInt64(&backend.CurrentConns, 1)
 }
 
-func (backend *Backend) decreseConn() {
+func (backend *Backend) DecreaseConn() {
 	atomic.AddInt64(&backend.CurrentConns, -1)
 }
 
-func (backend *Backend) getConnCount() int64 {
+func (backend *Backend) GetConnCount() int64 {
 	return atomic.LoadInt64(&backend.CurrentConns)
 }
 
