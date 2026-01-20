@@ -1,8 +1,16 @@
+// Backend struct 
+// servers have a url, theyre either alive or not and they can have multiple connections from clients 
+// CurrentConns : How many requests are currently being handled by this backend
+// mux so that it is a response to one request at a time, not 2 or more at the same time
+// It prevents multiple goroutines from accessing shared data at the same time in unsafe ways
+// ensuring thread safe operations on the server pool 
+
 package reverse_proxy
 
 import (
 	"net/url"
 	"sync"
+	"sync/atomic"
 )
 
 type Backend struct {
@@ -12,15 +20,45 @@ type Backend struct {
 	mux sync.RWMutex
 }
 
-// TO IMPLEMENT 
 
-
-// pointer receiver (we're modifying the value)
 func (backend *Backend) setAlive(alive bool) {
-
+	// Lock instead of Unlock bcs here we're writing and the lock should be exclusive, accessed by only one goroutine 
+	backend.mux.Lock()
+	defer backend.mux.Unlock()
+	backend.Alive = true 
+	
 }
 
 
 func (backend *Backend) isAlive() bool{
-	return true 
+	// locking the current state of backend (to avoid collision with the health checker goroutine access at the same time)
+	// Rlock for the lock on reading only 
+	backend.mux.RLock()
+	defer backend.mux.RUnlock()
+	return backend.Alive
+}
+
+
+// manipulating the connections to the backend 
+// must use atomic to avoid race conditions 
+// mutex would work but since this could be running multiple times at a time
+// bcs the code would be executing for every request, it would be too expensive for a high load
+// atomic allows to do the operation as well, doesnt need mutex 
+
+func (backend *Backend) increaseConn() {
+	atomic.AddInt64(&backend.CurrentConns, 1)
+}
+
+func (backend *Backend) decreseConn() {
+	atomic.AddInt64(&backend.CurrentConns, -1)
+}
+
+func (backend *Backend) getConnCount() int64 {
+	return atomic.LoadInt64(&backend.CurrentConns)
+}
+
+
+// to make logs cleaner 
+func (backend *Backend) String() string {
+	return backend.URL.String()
 }
