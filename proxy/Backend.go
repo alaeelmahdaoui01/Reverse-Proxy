@@ -69,6 +69,7 @@ func (backend *Backend) DecreaseConn() {
 	atomic.AddInt64(&backend.CurrentConns, -1)
 }
 
+// to use for least connections strategy
 func (backend *Backend) GetConnCount() int64 {
 	return atomic.LoadInt64(&backend.CurrentConns)
 }

@@ -1,26 +1,37 @@
 package proxy
 
-// from the backend in serverpool since it stores everything and 
-func (serverPool *ServerPool) GetNextValidPeer() *Backend {
-	if len(serverPool.Backends) == 0 {
+import (
+	"sync/atomic"
+)
+
+type RoundRobin struct {
+	pool    *ServerPool
+}
+
+func NewRoundRobin(pool *ServerPool) *RoundRobin {
+	return &RoundRobin{pool: pool}
+}
+
+func (rr *RoundRobin) GetNextValidPeer() *Backend {
+	rr.pool.mux.RLock()
+	defer rr.pool.mux.RUnlock()
+
+	n := len(rr.pool.Backends)
+	if n == 0 {
 		return nil
 	}
 
-	// i call the start backend then loop on the backends one after one in a cyclic one
-	// i return the first available one/alive 
+	start := atomic.AddUint64(&rr.pool.Current, 1)
 
-	for i:=0 ; i<len(serverPool.Backends) ; i++ {
-
+	for i := 0; i < n; i++ {
+		idx := int((start + uint64(i)) % uint64(n))
+		b := rr.pool.Backends[idx]
+		if b.IsAlive() {
+			return b
+		}
 	}
-
-	// should i update serverPool.current ??
-	
-	return nil // if none found 
+	return nil
 }
 
 
 
-// TO IMPLEMENT 
-
-// AddBackend(backend *Backend)
-// SetBackendStatus(uri *url.URL, alive bool)
