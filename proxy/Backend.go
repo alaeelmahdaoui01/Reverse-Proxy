@@ -78,3 +78,9 @@ func (backend *Backend) GetConnCount() int64 {
 func (backend *Backend) String() string {
 	return backend.URL.String()
 }
+
+
+// A backend becomes non-alive when your proxy decides it cannot be trusted to receive traffic.
+// There are exactly two moments when this happens 
+// Backend becomes non-alive during health checking 
+// Backend becomes non-alive during proxying errors : httputil.ReverseProxy calls  ErrorHandler

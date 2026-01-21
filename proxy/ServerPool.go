@@ -12,20 +12,20 @@ import (
 
 type ServerPool struct {
 	Backends []*Backend `json:"backends"`
-	Current uint64 `json:"current"` 
+	Current uint64 `json:"current"` // initially zero since not declared
 	mux sync.RWMutex
 }
 
 
 // we can add as much backend servers as we want
-func (sPool *ServerPool) addBackend(backend *Backend) {
+func (sPool *ServerPool) AddBackend(backend *Backend) {
 	sPool.mux.Lock()
 	defer sPool.mux.Unlock()
 	sPool.Backends = append(sPool.Backends, backend)
 }
 
 // we return one alive backend, we compute the current backend 
-func (sPool *ServerPool) returnValidBackend() (*Backend) {
+func (sPool *ServerPool) ReturnValidBackend() (*Backend) {
 	sPool.mux.RLock()
 	defer sPool.mux.RUnlock()
 

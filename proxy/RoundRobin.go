@@ -1,4 +1,4 @@
-package reverse_proxy
+package proxy
 
 // from the backend in serverpool since it stores everything and 
 func (serverPool *ServerPool) GetNextValidPeer() *Backend {
