@@ -12,6 +12,7 @@ func NewRoundRobin(pool *ServerPool) *RoundRobin {
 	return &RoundRobin{pool: pool}
 }
 
+
 func (rr *RoundRobin) GetNextValidPeer() *Backend {
 	rr.pool.mux.RLock()
 	defer rr.pool.mux.RUnlock()

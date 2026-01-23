@@ -3,6 +3,8 @@ package proxy
 import (
 	"time"
 	"errors"
+	"os"
+	"encoding/json"
 )
 
 type ProxyConfig struct {
@@ -26,16 +28,35 @@ func (proxyConfig *ProxyConfig) BuildServerPool() (*ServerPool , error) {
 	return pool , nil 
 }
 
-// TO IMPLEMENT 
-// load for the json file 
-// func LoadConfig(path string)  (*ProxyConfig, error){
+func LoadConfig(path string) (*ProxyConfig, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
 
-// }
+	var config ProxyConfig
+	decoder := json.NewDecoder(file)
+	decoder.DisallowUnknownFields()
 
-// setting which strategy for the load balancer 
-func (proxyConfig *ProxyConfig) SetStrategy(strategy string) {
-	proxyConfig.Strategy = strategy 
+	if err := decoder.Decode(&config); err != nil {
+		return nil, err
+	}
+
+	if config.Port == 0 {
+		return nil, errors.New("proxy port must be specified")
+	}
+	if len(config.Backends) == 0 {
+		return nil, errors.New("at least one backend is required")
+	}
+	if config.Strategy == "" {
+		config.Strategy = "round-robin" 
+	}
+
+	return &config, nil
 }
+
+
 
 // create the load balancer based on the strategy in the json file of the proxy
 func (c *ProxyConfig) CreateLoadBalancer(pool *ServerPool) (LoadBalancer, error) {

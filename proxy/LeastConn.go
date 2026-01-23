@@ -1,8 +1,5 @@
 package proxy
 
-import (
-	// "sync/atomic"
-)
 
 type LeastConn struct {
 	pool    *ServerPool

@@ -26,6 +26,9 @@ func (sPool *ServerPool) AddBackend(backend *Backend) {
 
 
 func (sPool *ServerPool) SetBackendStatus(uri *url.URL, alive bool) {
+	sPool.mux.Lock()
+	defer sPool.mux.Unlock()
+
 	for _,backend := range sPool.Backends {
 		if backend.URL == uri {
 			backend.SetAlive(alive)

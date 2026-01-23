@@ -23,7 +23,7 @@ type Backend struct {
 
 // constructor for backends
 func NewBackend(rawURL string) (*Backend, error) {
-	// to make it url.URL
+	// to make the raw url that is a string as type url.URL
 	parsedURL, err := url.Parse(rawURL) 
 	if err != nil {
 		return nil, err
