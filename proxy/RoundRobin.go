@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"sync/atomic"
+	// "log"
 )
 
 type RoundRobin struct {
@@ -27,10 +28,13 @@ func (rr *RoundRobin) GetNextValidPeer() *Backend {
 	for i := 0; i < n; i++ {
 		idx := int((start + uint64(i)) % uint64(n))
 		b := rr.pool.Backends[idx]
+		// log.Printf("Checking backend %s alive=%v", b.URL, b.IsAlive())
 		if b.IsAlive() {
 			return b
 		}
 	}
+
+	
 	return nil
 }
 

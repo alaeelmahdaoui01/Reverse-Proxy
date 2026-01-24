@@ -11,7 +11,8 @@ type ProxyConfig struct {
 	Backends []string `json:"backends"`
 	Port int `json:"port"`
 	Strategy string `json:"strategy"` // "round-robin" or "least-conn"
-	HealthCheckFreq time.Duration `json:"health_check_frequency"`
+	HealthCheckFreqRaw string `json:"health_check_frequency"`
+	HealthCheckFreq    time.Duration `json:"-"`  // to not read from json
 }
 
 
@@ -29,13 +30,28 @@ func (proxyConfig *ProxyConfig) BuildServerPool() (*ServerPool , error) {
 }
 
 func LoadConfig(path string) (*ProxyConfig, error) {
+
+	
+	var config ProxyConfig
+
+	if config.HealthCheckFreqRaw == "" {
+		config.HealthCheckFreq = 30 * time.Second 
+	} else {
+		d, err := time.ParseDuration(config.HealthCheckFreqRaw)
+		if err != nil {
+			return nil, errors.New("invalid health_check_frequency (example: \"30s\")")
+		}
+		config.HealthCheckFreq = d
+	}
+
+
+
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, err
 	}
 	defer file.Close()
 
-	var config ProxyConfig
 	decoder := json.NewDecoder(file)
 	decoder.DisallowUnknownFields()
 
