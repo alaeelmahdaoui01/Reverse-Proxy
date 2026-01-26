@@ -4,6 +4,8 @@ package proxy
 import (
 	"net/http"
 	"net/http/httputil"
+	"context"
+	"time"
 )
 
 // // an HTTP handler: used forward HTTP traffic properly
@@ -37,6 +39,7 @@ func NewProxyHandler(lb LoadBalancer, pool *ServerPool) *ProxyHandler {
 
 // A ajouter 
 // If no backends are available, the proxy should return an appropriate HTTP error (e.g., 503 Service Unavailable)
+// using context : when client diconnects, cancel the client backend request, OR if backend takes too long (5s) the request is cancelled 
 func (p *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	backend := p.lb.GetNextValidPeer()
@@ -56,5 +59,10 @@ func (p *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(rw, "Backend unavailable", http.StatusBadGateway)
 	}
 
-	proxy.ServeHTTP(w, r)
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second) 
+	defer cancel()
+
+	rq := r.WithContext(ctx)
+
+	proxy.ServeHTTP(w, rq)
 }

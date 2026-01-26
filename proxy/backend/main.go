@@ -79,3 +79,6 @@ func healthHandler(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("OK"))
 }
+
+
+//  for the backend server i dont need client.go, since im using just running the backend servers and the response/client is equivalent to running the proxy and curl 

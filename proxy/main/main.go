@@ -1,83 +1,38 @@
-// mansach dak lblan dial when client disconnects it should also disconnect : 
-// where am i gonna use context : Handle graceful shutdowns and request timeouts using the context package
+
 // Master Context propagation to ensure backend requests are canceled if the client disconnects.
 
-// In rpoxy handler :
-// Context: Ensure the request context is passed through so that slow backend processing
-// can be canceled.
+// In proxy handler :.
 // error 503 to add in case of no backend found 
 
 
 // admin api A FAIRRREEE
 
-// inside main function :
-// Main Goroutine: Starts the HTTP Proxy server and the Admin API. (should i start the backends ??)
-// Health Check Goroutine: Runs a time.Ticker loop to verify backend availability.
-// Request Handling: When a request arrives, the ServerPool selects a backend,
-// increments its connection count, forwards the request, and decrements the count
-// upon completion.
 
-
-// make a simpler backend server to try then test 
-// then make a rest api 
-// also should i make many backends or just one? hmmmm
-// it should have a get /health to be used in the health checker to checkBackend 
 
 // HealthChecker updates status, Admin API reads it and the proxyhandler (loadbalancer), client can see backend states using admin api get /health
 // HealthChecker writes to ServerPool, Admin API reads from ServerPool
+
+
 package main
 
 import (
 	"project.com/proxy"
 	"log"
 	"net/http"
-	// "time"
+	"time"
 	"fmt"
 	// "flag"
+	"context"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
-// temporary main
-// func main() {
-// 	cfg, _ := proxy.LoadConfig("config.json")
-// 	pool, _ := cfg.BuildServerPool()
-// 	lb, _ := cfg.CreateLoadBalancer(pool)
+// with : srv.Shutdown(ctx)
+// Go does ALL of this automatically: Stop accepting new connections, Wait for active ServeHTTP calls, 
+// Propagate cancellation to their contexts, Let them finish cleanly, Exit only after timeout
 
-// 	// start proxy handler
-// 	handler := proxy.NewProxyHandler(lb, pool)
-// 	go func() {
-// 		log.Fatal(http.ListenAndServe(":8080", handler))
-// 	}()
-
-// 	// start health checker in background
-// 	hc := &proxy.HealthChecker{
-// 		SPool:      pool,
-// 		Frequency: cfg.HealthCheckFreq,
-// 		Client:    &http.Client{Timeout: 2 * time.Second},
-// 	}
-// 	go hc.Start()
-
-// 	select {} // keep main alive
-
-// }
-
-
-// func main() {
-//     cfg, _ := proxy.LoadConfig("config.json")
-
-//     pool, _ := cfg.BuildServerPool()
-//     lb, _ := cfg.CreateLoadBalancer(pool)
-
-//     handler := proxy.NewProxyHandler(lb, pool)
-
-//     server := &http.Server{
-//         Addr:    fmt.Sprintf(":%d", cfg.Port),
-//         Handler: handler,
-//     }
-
-
-//     log.Fatal(server.ListenAndServe())
-// }
-
+// proxy handler relies on main.go to trigger cancellation globally
 
 func main() {
 	// configPath := flag.String("config", "../config.json", "path to config file")
@@ -104,15 +59,51 @@ func main() {
 
     handler := proxy.NewProxyHandler(lb, pool)
 
-    log.Printf("Proxy listening on :%d\n", cfg.Port)
-    log.Fatal(http.ListenAndServe(
-        fmt.Sprintf(":%d", cfg.Port),
-        handler,
-    ))
+	srv := &http.Server{
+        Addr:         fmt.Sprintf(":%d", cfg.Port),
+        Handler:      handler,
+    }
 
-	// healthChecker := proxy.NewHealthChecker(pool, cfg.HealthCheckFreq)
-	// go healthChecker.Start()
+	// Run server in goroutine
+    go func() {
+        log.Printf("Proxy listening on :%d\n", cfg.Port)
+		// http.listenandserve(addr,handler) to run server of proxy
+        if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+            log.Fatalf("Listen error: %v", err)
+        }
+    }()
+
+	// Wait for CTRL+C or kill
+    stop := make(chan os.Signal, 1)
+    signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
+
+    <-stop
+    log.Println("Shutting down proxy...")
+
+    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+    defer cancel()
+
+    if err := srv.Shutdown(ctx); err != nil {
+        log.Fatalf("Shutdown failed: %v", err)
+    }
+
+    log.Println("Proxy stopped gracefully")
+
 }
+
+// before running this main.go 
+
+// RUNNING THE BACKENDS 
+// $env:PORT="8001"
+// go run main.go
+// $env:PORT="8002"
+// go run main.go
+// $env:PORT="8003"
+// go run main.go
+
+// then run the main.go 
+
+//  then check proxy response with curl : curl.exe http://localhost:9000/students
 
 
 

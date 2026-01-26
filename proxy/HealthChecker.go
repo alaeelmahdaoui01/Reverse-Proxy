@@ -34,17 +34,9 @@ func NewHealthChecker(pool *ServerPool, freq time.Duration) *HealthChecker {
 	}
 }
 
-// checks the /health of the backend
-//
-//	func (hc *HealthChecker) CheckBackend(backend *Backend) bool {
-//		response, error := hc.Client.Get(backend.URL.String() + "/health")
-//		if error!= nil {
-//			log.Print("Backend at ", backend.URL , "down !")
-//			return false
-//		}
-//		// response.Body.Close()
-//		return response.StatusCode == http.StatusOK
-//	}
+// TO DO 
+// adding context + timeout for health checks 
+// NOW it runs forever, it should stop when proxy shuts down 
 func (hc *HealthChecker) CheckBackend(b *Backend) bool {
 
 	resp, err := hc.Client.Get(b.URL.String() + "/health")
