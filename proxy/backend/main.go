@@ -1,4 +1,4 @@
-// from powershell to run : 
+// from powershell to run :
 
 // $env:PORT="8001"
 // go run main.go
@@ -19,6 +19,7 @@ import (
 	"net/http"
 	"os"
 	"sync"
+	"time"
 )
 
 type Student struct {
@@ -50,13 +51,22 @@ func studentsHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 
 	case http.MethodGet:
+		time.Sleep(9 * time.Second) // simulating a small backend to witness my load balancer logic
+		// using less than 10 seconds bcs otherwise will get unavailable backend bcs context timeout is running also at the same time and its evaluating the backends response time in proxyhandler 
+		// and in main i have 10 seconds timeout but whats the difference with thta one is proxyhandler 
+
+
+
 		mu.Lock()
 		defer mu.Unlock()
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(students)
+		json.NewEncoder(w).Encode(students)		
+
 
 	case http.MethodPost:
+		time.Sleep(9 * time.Second) // simulating a small backend to witness my load balancer logic
+
 		var s Student
 		if err := json.NewDecoder(r.Body).Decode(&s); err != nil {
 			http.Error(w, "invalid JSON", http.StatusBadRequest)
@@ -73,6 +83,7 @@ func studentsHandler(w http.ResponseWriter, r *http.Request) {
 	default:
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 	}
+
 }
 
 func healthHandler(w http.ResponseWriter, _ *http.Request) {
@@ -80,5 +91,4 @@ func healthHandler(w http.ResponseWriter, _ *http.Request) {
 	w.Write([]byte("OK"))
 }
 
-
-//  for the backend server i dont need client.go, since im using just running the backend servers and the response/client is equivalent to running the proxy and curl 
+//  for the backend server i dont need client.go, since im using just running the backend servers and the response/client is equivalent to running the proxy and curl

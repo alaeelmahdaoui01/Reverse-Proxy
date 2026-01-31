@@ -59,7 +59,7 @@ func (p *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(rw, "Backend unavailable", http.StatusBadGateway)
 	}
 
-	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second) 
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second) 
 	defer cancel()
 
 	rq := r.WithContext(ctx)
