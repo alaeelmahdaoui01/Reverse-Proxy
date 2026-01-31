@@ -41,7 +41,7 @@ func (backend *Backend) SetAlive(alive bool) {
 	// Lock instead of Unlock bcs here we're writing and the lock should be exclusive, accessed by only one goroutine 
 	backend.mux.Lock()
 	defer backend.mux.Unlock()
-	backend.Alive = true 
+	backend.Alive = alive  
 	
 }
 

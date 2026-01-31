@@ -59,6 +59,12 @@ func (p *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(rw, "Backend unavailable", http.StatusBadGateway)
 	}
 
+	// i have a question here, so if the backned i want to use is unavailable it doesnt move to the next backend?
+	// oui pcq it was set as alive but its not bcs healthchecker 
+	// but in this case it should update the status 
+	// but i already got backend unavailable but status was not updated
+	// and health checker is also checking at the same time and not updating. Theres smtg wrong here and healthchecker 
+
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second) 
 	defer cancel()
 

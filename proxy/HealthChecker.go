@@ -61,7 +61,12 @@ func (hc *HealthChecker) CheckBackends() {
 	// backends := hc.SPool.Backends
 	// hc.SPool.mux.RUnlock()
 
-	for _, backend := range hc.SPool.Backends {
+	hc.SPool.mux.Lock()
+	backends := make([]*Backend, len(hc.SPool.Backends))
+	copy(backends, hc.SPool.Backends)
+	hc.SPool.mux.Unlock()
+	
+	for _, backend := range backends {
 		backend.SetAlive(hc.CheckBackend(backend))
 	}
 }
