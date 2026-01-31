@@ -19,7 +19,12 @@ func NewAdminApi(sPool *ServerPool) *AdminApi {
 type ResponseStructure struct {
 	TotalBackends    int   `json:"total_backends"`
 	ActiveBackends     int      `json:"active_backends"`
-	Backends []*Backend   `json:"backends"`
+	Backends []BackendStatus   `json:"backends"`
+}
+type BackendStatus struct {
+    URL                string `json:"url"`
+    Alive              bool   `json:"alive"`
+    CurrentConnections int    `json:"current_connections"`
 }
 
 func (api *AdminApi) StatusHandler(w http.ResponseWriter, r *http.Request) {
@@ -38,11 +43,21 @@ func (api *AdminApi) StatusHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	backends := make([]BackendStatus, 0)
+
+	for _, backend := range api.SPool.Backends {
+		backends = append(backends, BackendStatus{
+			URL:                backend.URL.String(),
+			Alive:              backend.IsAlive(),
+			CurrentConnections: int(backend.GetConnCount()),
+		})
+	}
+
 
 	response := ResponseStructure{
 		TotalBackends : len(api.SPool.Backends),
 		ActiveBackends: active_backends,
-		Backends: api.SPool.Backends,
+		Backends: backends,
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
@@ -59,8 +74,8 @@ func (api *AdminApi) BackendsHandler(w http.ResponseWriter, r *http.Request) {
 		case http.MethodPost:
 
 			var req BackendReq
-			api.SPool.mux.Lock()
-			defer api.SPool.mux.Unlock()
+			// api.SPool.mux.Lock()
+			// defer api.SPool.mux.Unlock()
 			error := json.NewDecoder(r.Body).Decode(&req)
 			if error != nil {
 				http.Error(w, "Invalid Json" , http.StatusBadRequest)
@@ -81,14 +96,16 @@ func (api *AdminApi) BackendsHandler(w http.ResponseWriter, r *http.Request) {
 		case http.MethodDelete:
 			var req BackendReq
 
-			api.SPool.mux.Lock()
-			defer api.SPool.mux.Unlock()
+			
 
 			error := json.NewDecoder(r.Body).Decode(&req)
 			if error != nil {
 				http.Error(w, "Invalid Json" , http.StatusBadRequest)
 				return
 			}
+
+			api.SPool.mux.Lock()
+			defer api.SPool.mux.Unlock()
 
 			for idx, backend := range api.SPool.Backends {
 				if backend.URL.String() == req.Url{
