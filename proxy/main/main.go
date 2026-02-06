@@ -119,8 +119,5 @@ func main() {
 //  then check proxy response with curl : curl.exe http://localhost:9000/students
 //  to run the adminapi get/status : curl http://localhost:8081/status
 //  to add backend dynamically : curl -X POST http://localhost:8081/backends -H "Content-Type: application/json" -d '{"url":"http://localhost:8004"}'
-//  to remove backend : curl -X DELETE http://localhost:8081/backends \ 
-//  -H "Content-Type: application/json" \
-//  -d '{"url":"http://localhost:8004"}'
-
+//  to remove backend : curl -X DELETE http://localhost:8081/backends -H "Content-Type: application/json" -d '{"url":"http://localhost:8004"}'
 //  i check proxy again with curl http://localhost:9000/students
