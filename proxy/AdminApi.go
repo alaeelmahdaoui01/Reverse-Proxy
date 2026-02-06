@@ -132,14 +132,3 @@ func (api *AdminApi) StartAdminServer() {
 }
 
 
-// func main() {
-// 	if p := os.Getenv("PORT"); p != "" {
-// 		port = p
-// 	}
-
-// 	http.HandleFunc("/students", studentsHandler)
-// 	http.HandleFunc("/health", healthHandler)
-
-// 	log.Printf("Backend running on :%s\n", port)
-// 	log.Fatal(http.ListenAndServe(":"+port, nil))
-// }

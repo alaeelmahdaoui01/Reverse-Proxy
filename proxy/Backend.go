@@ -1,9 +1,3 @@
-// Backend struct 
-// servers have a url, theyre either alive or not and they can have multiple connections from clients 
-// CurrentConns : How many requests are currently being handled by this backend
-// mux so that it is a response to one request at a time, not 2 or more at the same time
-// It prevents multiple goroutines from accessing shared data at the same time in unsafe ways
-// ensuring thread safe operations on the server pool 
 
 package proxy
 
@@ -23,7 +17,7 @@ type Backend struct {
 
 // constructor for backends
 func NewBackend(rawURL string) (*Backend, error) {
-	// to make the raw url that is a string as type url.URL
+
 	parsedURL, err := url.Parse(rawURL) 
 	if err != nil {
 		return nil, err
@@ -38,7 +32,7 @@ func NewBackend(rawURL string) (*Backend, error) {
 
 
 func (backend *Backend) SetAlive(alive bool) {
-	// Lock instead of Unlock bcs here we're writing and the lock should be exclusive, accessed by only one goroutine 
+	// Lock instead of Rlock bcs here we're writing and the lock should be exclusive, accessed by only one goroutine 
 	backend.mux.Lock()
 	defer backend.mux.Unlock()
 	backend.Alive = alive  
