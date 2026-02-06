@@ -37,6 +37,3 @@ func (rr *RoundRobin) GetNextValidPeer() *Backend {
 	
 	return nil
 }
-
-
-

@@ -7,24 +7,32 @@ import (
 )
 
 type Backend struct {
-	URL          *url.URL `json:"url"`
-	Alive        bool     `json:"alive"`
-	CurrentConns int64    `json:"current_connections"`
-	mux          sync.RWMutex
+	URL           *url.URL `json:"url"`
+	Alive         bool     `json:"alive"`
+	CurrentConns  int64    `json:"current_connections"`
+	mux           sync.RWMutex
+	Weight        int `json:"weight"`
+	CurrentWeight int `json:"-"`
 }
 
 // constructor for backends
-func NewBackend(rawURL string) (*Backend, error) {
+func NewBackend(rawURL string, weight int) (*Backend, error) {
 
 	parsedURL, err := url.Parse(rawURL)
 	if err != nil {
 		return nil, err
 	}
 
+	if weight <= 0 {
+		weight = 1
+	}
+
 	return &Backend{
-		URL:          parsedURL,
-		Alive:        false,
-		CurrentConns: 0,
+		URL:           parsedURL,
+		Alive:         false,
+		CurrentConns:  0,
+		CurrentWeight: 0,
+		Weight:        weight,
 	}, nil
 }
 
@@ -42,6 +50,18 @@ func (backend *Backend) IsAlive() bool {
 	backend.mux.RLock()
 	defer backend.mux.RUnlock()
 	return backend.Alive
+}
+
+func (backend *Backend) UpdateCurrentWeight(w int) {
+	backend.mux.Lock()
+	defer backend.mux.Unlock()
+	backend.CurrentWeight += w
+}
+
+func (backend *Backend) GetCurrentWeight() int {
+	backend.mux.RLock()
+	defer backend.mux.RUnlock()
+	return backend.CurrentWeight
 }
 
 // manipulating the connections to the backend

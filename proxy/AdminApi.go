@@ -23,6 +23,7 @@ type BackendStatus struct {
 	URL                string `json:"url"`
 	Alive              bool   `json:"alive"`
 	CurrentConnections int    `json:"current_connections"`
+	Weight             int    `json:"weight"`
 }
 
 func (api *AdminApi) StatusHandler(w http.ResponseWriter, r *http.Request) {
@@ -48,6 +49,7 @@ func (api *AdminApi) StatusHandler(w http.ResponseWriter, r *http.Request) {
 			URL:                backend.URL.String(),
 			Alive:              backend.IsAlive(),
 			CurrentConnections: int(backend.GetConnCount()),
+			Weight:             backend.Weight,
 		})
 	}
 
@@ -61,6 +63,11 @@ func (api *AdminApi) StatusHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 type BackendReq struct {
+	Url    string `json:"url"`
+	Weight int    `json:"weight"`
+}
+
+type BackendReqDel struct {
 	Url string `json:"url"`
 }
 
@@ -71,15 +78,14 @@ func (api *AdminApi) BackendsHandler(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPost:
 
 		var req BackendReq
-		// api.SPool.mux.Lock()
-		// defer api.SPool.mux.Unlock()
+
 		error := json.NewDecoder(r.Body).Decode(&req)
 		if error != nil {
 			http.Error(w, "Invalid Json", http.StatusBadRequest)
 			return
 		}
 
-		backend, err := NewBackend(req.Url)
+		backend, err := NewBackend(req.Url, req.Weight)
 		if err != nil {
 			http.Error(w, "invalid backend URL", http.StatusBadRequest)
 			return
@@ -105,7 +111,7 @@ func (api *AdminApi) BackendsHandler(w http.ResponseWriter, r *http.Request) {
 		})
 
 	case http.MethodDelete:
-		var req BackendReq
+		var req BackendReqDel
 
 		error := json.NewDecoder(r.Body).Decode(&req)
 		if error != nil {

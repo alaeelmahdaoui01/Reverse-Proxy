@@ -8,11 +8,16 @@ import (
 )
 
 type ProxyConfig struct {
-	Backends []string `json:"backends"`
+	Backends []BackendConfig `json:"backends"`
 	Port int `json:"port"`
-	Strategy string `json:"strategy"` // "round-robin" or "least-conn"
+	Strategy string `json:"strategy"` // "round-robin" or "least-conn" or "weighted"
 	HealthCheckFreqRaw string `json:"health_check_frequency"`
 	HealthCheckFreq    time.Duration `json:"-"`  // to not read from json
+}
+
+type BackendConfig struct {
+	URL    string `json:"url"`
+	Weight int    `json:"weight"` 
 }
 
 
@@ -20,7 +25,7 @@ type ProxyConfig struct {
 func (proxyConfig *ProxyConfig) BuildServerPool() (*ServerPool , error) {
 	pool:=&ServerPool{}
 	for _,backend := range(proxyConfig.Backends) {
-		b, err := NewBackend(backend)
+		b, err := NewBackend(backend.URL,backend.Weight)
 		if err != nil{
 			return nil, err
 		}
@@ -31,7 +36,6 @@ func (proxyConfig *ProxyConfig) BuildServerPool() (*ServerPool , error) {
 
 func LoadConfig(path string) (*ProxyConfig, error) {
 
-	
 	var config ProxyConfig
 
 	if config.HealthCheckFreqRaw == "" {
@@ -43,8 +47,6 @@ func LoadConfig(path string) (*ProxyConfig, error) {
 		}
 		config.HealthCheckFreq = d
 	}
-
-
 
 	file, err := os.Open(path)
 	if err != nil {
@@ -82,6 +84,8 @@ func (c *ProxyConfig) CreateLoadBalancer(pool *ServerPool) (LoadBalancer, error)
 		return NewRoundRobin(pool), nil
 	case "least-conn" : 
 		return NewLeastConn(pool), nil
+	case "weightedRB":
+		return NewWeightedRoundRobin(pool), nil
 	default:
 		return nil, errors.New("Invalid strategy")
 	}

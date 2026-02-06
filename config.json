@@ -1,10 +1,20 @@
+
 {
   "port": 9000,
-  "strategy": "round-robin",
-  "health_check_frequency": "5s",
+  "strategy": "weightedRB",
+  "health_check_frequency": "30s",
   "backends": [
-    "http://localhost:8001",
-    "http://localhost:8002", 
-    "http://localhost:8003"
+    {
+      "url": "http://localhost:8001",
+      "weight": 3
+    },
+    {
+      "url": "http://localhost:8002",
+      "weight": 2
+    },
+    {
+      "url": "http://localhost:8003",
+      "weight": 1
+    }
   ]
 }
